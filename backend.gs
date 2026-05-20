@@ -2,29 +2,22 @@
  * แคลจ๋าไม่ไหวแล้ว — Apps Script Backend
  *
  * Deploy:
- * 1. สร้าง Google Sheet ใหม่ ตั้งชื่อ "KalJaa Sync"
- * 2. Extensions → Apps Script → paste code นี้
- * 3. Script editor: File → Project properties → Script Properties → Add:
- *      key:   SHEET_ID
- *      value: <Sheet ID จาก URL ของ Google Sheet>
- *    (Sheet ID = ส่วนระหว่าง /d/ กับ /edit ใน URL)
- * 4. Deploy → New deployment → Type: Web app
+ * 1. Extensions → Apps Script → paste code นี้
+ * 2. Save → Deploy → New deployment → Type: Web app
  *      Execute as: Me
  *      Who has access: Anyone
- * 5. คัดลอก Web App URL ที่ได้ → paste ในแอพที่หน้า Settings → Google Sheets Sync
+ * 3. คัดลอก Web App URL → paste ในแอพที่หน้า Settings → Google Sheets Sync
  *
  * ทุก event จาก app จะถูก append เป็น 1 row ใน sheet "EVENTS"
  * คอลัมน์: timestamp | userId | date | event_type | event_json
  */
 
+// === Hardcoded config (แก้ตรงนี้ถ้าเปลี่ยน sheet) ===
+const SHEET_ID = '1081AMjkvkOrzPuUadKrlSL84j13Y1d4w7KcYe1peoN8';
+
 function doPost(e) {
   try {
-    const sheetId = PropertiesService.getScriptProperties().getProperty('SHEET_ID');
-    if (!sheetId) {
-      return ContentService
-        .createTextOutput(JSON.stringify({ ok:false, error:'SHEET_ID not set in Script Properties' }))
-        .setMimeType(ContentService.MimeType.JSON);
-    }
+    const sheetId = SHEET_ID;
 
     const body = JSON.parse(e.postData.contents);
     const userId = body.userId || 'anonymous';
@@ -72,10 +65,7 @@ function doPost(e) {
 
 function doGet(e) {
   try {
-    const sheetId = PropertiesService.getScriptProperties().getProperty('SHEET_ID');
-    if (!sheetId) {
-      return ContentService.createTextOutput(JSON.stringify({ ok:false, error:'SHEET_ID not set' })).setMimeType(ContentService.MimeType.JSON);
-    }
+    const sheetId = SHEET_ID;
     const userId = (e.parameter && e.parameter.userId) || null;
     if (!userId) {
       return ContentService.createTextOutput(JSON.stringify({ ok:false, error:'userId required' })).setMimeType(ContentService.MimeType.JSON);

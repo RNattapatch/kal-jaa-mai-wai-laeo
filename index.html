@@ -798,9 +798,12 @@ const AI_FOOD_PROMPT = `คุณเป็นนักโภชนาการ�
 กฎ: อาหารไทยตามสั่ง บวกเผื่อน้ำมัน 50-100 kcal · หลายจานในรูป รวมยอด · ไม่ใช่อาหาร confidence=low kcal=0`;
 
 /* ===== State ===== */
+// Default Apps Script URL — pre-filled for แฟน ไม่ต้อง paste URL เอง
+const DEFAULT_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbywXs_5N6nIqk-7e-MUmlXIUWLcCUKn-vUnGxJKHkvLMVQyNRFX4eU5Ujxi0Ux7DGaH/exec';
+
 const state = {
   profile:null,
-  settings:{ openRouterKey:'', appsScriptUrl:'', visionModel:'google/gemini-2.5-flash-lite', syncEnabled:true, lastSyncedAt:null },
+  settings:{ openRouterKey:'', appsScriptUrl:DEFAULT_APPS_SCRIPT_URL, visionModel:'google/gemini-2.5-flash-lite', syncEnabled:true, lastSyncedAt:null },
   logs:{}, isDemo:false, scanResult:null, manualCategory:'all', historyRange:7,
   weekChart:null, historyChart:null, selectedWorkout:null
 };
@@ -1595,7 +1598,7 @@ function clearAllData() {
   if (!confirm('แน่ใจไหมว่าจะลบข้อมูลทั้งหมด? ย้อนกลับไม่ได้')) return;
   localStorage.removeItem(KEY.profile); localStorage.removeItem(KEY.settings); localStorage.removeItem(KEY.logs);
   state.profile = null; state.logs = {};
-  state.settings = { openRouterKey:'', appsScriptUrl:'', visionModel:'google/gemini-2.5-flash-lite', syncEnabled:true, lastSyncedAt:null };
+  state.settings = { openRouterKey:'', appsScriptUrl:DEFAULT_APPS_SCRIPT_URL, visionModel:'google/gemini-2.5-flash-lite', syncEnabled:true, lastSyncedAt:null };
   toast('ล้างข้อมูลแล้ว','info');
   setTimeout(() => location.reload(), 800);
 }
