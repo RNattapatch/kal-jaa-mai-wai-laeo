@@ -329,6 +329,15 @@
           </div>
         </div>
 
+        <!-- Scan result date selector -->
+        <div class="bg-white/60 rounded-2xl p-4 border border-white/40 shadow-sm flex justify-between items-center mb-6">
+          <div>
+            <p class="text-[11px] font-bold text-outline uppercase tracking-wider">วันที่บันทึก</p>
+            <p class="text-label-md text-primary-container font-semibold mt-0.5"><span id="scanResultDateLabel">วันนี้</span></p>
+          </div>
+          <input id="scanResultDate" type="date" class="form-input-soft rounded-lg px-3 py-2 text-label-md text-primary-container" onchange="setLogDate(this.value)"/>
+        </div>
+
         <div id="scanResultNotes" class="bg-surface-container-low rounded-xl p-4 mb-6 flex gap-3 items-start border border-surface-variant/50 hidden">
           <span class="material-symbols-outlined text-tertiary-container mt-0.5 icon-fill">lightbulb</span>
           <p id="scanResultNotesText" class="text-label-md text-on-surface-variant leading-relaxed"></p>
@@ -346,6 +355,16 @@
     <section>
       <h2 class="text-headline-md font-headline-md text-primary-container mb-1">เพิ่มอาหาร</h2>
       <p class="text-body-md text-outline">ค้นหาจากรายการ หรือพิมพ์เอง</p>
+    </section>
+    <!-- Date selector chip -->
+    <section class="flex items-center gap-2">
+      <button onclick="openDatePicker('manualLogDate')" class="logDateChipBtn flex items-center gap-2 px-3 py-2 rounded-full glass-card text-label-md text-primary-container">
+        <span class="material-symbols-outlined text-[18px]">event</span>
+        <span>บันทึกสำหรับ: <strong id="manualLogDateLabel">วันนี้</strong></span>
+        <span class="material-symbols-outlined text-[18px]">expand_more</span>
+      </button>
+      <input id="manualLogDate" type="date" class="hidden" onchange="setLogDate(this.value)"/>
+      <button id="manualResetDateBtn" onclick="setLogDate(todayStr())" class="hidden px-3 py-2 rounded-full bg-secondary-container text-on-primary text-label-sm">รีเซ็ต</button>
     </section>
 
     <section class="flex flex-col gap-stack-sm">
@@ -390,12 +409,81 @@
 <!-- ===== ROUTE: Workout ===== -->
 <section id="route-workout" class="route pb-32">
   <main class="px-margin-mobile pt-stack-lg max-w-2xl mx-auto">
-    <div class="mb-stack-lg">
+    <div class="mb-4">
       <h2 class="text-headline-md font-headline-md text-primary-container mb-1">บันทึกออกกำลังกาย</h2>
-      <p class="text-body-md text-outline">เลือกกิจกรรมที่ทำวันนี้</p>
+      <p class="text-body-md text-outline">เลือกกิจกรรมที่ทำ · กดปุ่ม ✏ เพื่อตั้งค่า MET / สร้างกิจกรรมใหม่</p>
+    </div>
+    <!-- Date selector chip -->
+    <div class="flex items-center gap-2 mb-4">
+      <button onclick="openDatePicker('workoutLogDate')" class="logDateChipBtn flex items-center gap-2 px-3 py-2 rounded-full glass-card text-label-md text-primary-container">
+        <span class="material-symbols-outlined text-[18px]">event</span>
+        <span>บันทึกสำหรับ: <strong id="workoutLogDateLabel">วันนี้</strong></span>
+        <span class="material-symbols-outlined text-[18px]">expand_more</span>
+      </button>
+      <input id="workoutLogDate" type="date" class="hidden" onchange="setLogDate(this.value)"/>
+      <button id="workoutResetDateBtn" onclick="setLogDate(todayStr())" class="hidden px-3 py-2 rounded-full bg-secondary-container text-on-primary text-label-sm">รีเซ็ต</button>
     </div>
     <div id="workoutGrid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-stack-md"></div>
   </main>
+
+  <!-- Workout edit/create modal -->
+  <div id="workoutEditModal" class="fixed inset-0 z-[58] hidden flex items-end md:items-center justify-center">
+    <div class="absolute inset-0 bg-primary-container/30 backdrop-blur-md" onclick="closeWorkoutEditModal()"></div>
+    <div class="relative w-full max-w-md bg-surface glass-card rounded-t-[24px] md:rounded-[24px] p-6 shadow-2xl anim-slide-up max-h-[90vh] overflow-y-auto hide-scrollbar">
+      <div class="w-12 h-1.5 bg-outline-variant/50 rounded-full mx-auto mb-6 md:hidden"></div>
+      <div class="flex items-center gap-3 mb-5">
+        <div class="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+          <span id="workoutEditPreviewIcon" class="material-symbols-outlined text-[28px] text-primary-container">fitness_center</span>
+        </div>
+        <div class="flex-1">
+          <h3 id="workoutEditTitle" class="text-headline-sm font-headline-sm text-primary-container">สร้างกิจกรรมใหม่</h3>
+          <p id="workoutEditSubtitle" class="text-label-md text-outline">ตั้งชื่อ + กำหนด MET</p>
+        </div>
+        <button onclick="closeWorkoutEditModal()" class="w-8 h-8 flex items-center justify-center rounded-full bg-surface-container hover:bg-surface-dim text-outline transition-colors">
+          <span class="material-symbols-outlined text-[20px]">close</span>
+        </button>
+      </div>
+
+      <div class="space-y-4">
+        <div id="workoutEditNameWrap">
+          <label class="text-label-md text-on-surface-variant mb-2 block">ชื่อกิจกรรม</label>
+          <input id="workoutEditName" type="text" placeholder="เช่น สกี / เซิร์ฟ / ปีนผา" class="form-input-soft rounded-lg px-4 py-3 w-full" maxlength="40"/>
+        </div>
+
+        <div>
+          <label class="text-label-md text-on-surface-variant mb-2 block">ค่า MET (เผาแคล) <span class="text-label-sm text-outline">— เลือกระดับความหนัก</span></label>
+          <div class="grid grid-cols-2 gap-2">
+            <button type="button" data-met="2.5" class="metPresetBtn form-input-soft rounded-lg py-2.5 text-label-md font-medium">😴 เบา (2.5)</button>
+            <button type="button" data-met="4.0" class="metPresetBtn form-input-soft rounded-lg py-2.5 text-label-md font-medium">🚶 เบา-ปานกลาง (4)</button>
+            <button type="button" data-met="6.0" class="metPresetBtn form-input-soft rounded-lg py-2.5 text-label-md font-medium">🏃 ปานกลาง (6)</button>
+            <button type="button" data-met="8.0" class="metPresetBtn form-input-soft rounded-lg py-2.5 text-label-md font-medium">💪 หนัก (8)</button>
+            <button type="button" data-met="10.0" class="metPresetBtn form-input-soft rounded-lg py-2.5 text-label-md font-medium">🔥 หนักมาก (10)</button>
+            <button type="button" data-met="12.0" class="metPresetBtn form-input-soft rounded-lg py-2.5 text-label-md font-medium">⚡ สุดขีด (12)</button>
+          </div>
+          <div class="flex items-center gap-3 mt-3">
+            <label class="text-label-md text-outline">ค่าเอง:</label>
+            <input id="workoutEditMet" type="number" step="0.1" min="1" max="20" class="form-input-soft rounded-lg px-3 py-2 w-24 text-center" value="6.0"/>
+            <span class="text-label-sm text-outline" id="workoutEditKcalPreview">≈ 0 kcal/30 นาที</span>
+          </div>
+        </div>
+
+        <div id="workoutEditIconWrap">
+          <label class="text-label-md text-on-surface-variant mb-2 block">ไอคอน</label>
+          <div id="workoutEditIconGrid" class="grid grid-cols-6 gap-2"></div>
+        </div>
+
+        <div id="workoutEditOverrideHint" class="hidden bg-primary-fixed/30 rounded-lg p-3 text-label-sm text-primary-container">
+          <strong>กิจกรรมพื้นฐาน:</strong> แก้ค่า MET ได้อย่างเดียว ไม่สามารถเปลี่ยนชื่อ/ไอคอน หรือลบได้
+        </div>
+
+        <div class="flex gap-2 pt-2">
+          <button id="workoutEditDeleteBtn" onclick="deleteCustomWorkoutFromEdit()" class="hidden flex-1 bg-error-container text-on-error-container border border-error/30 rounded-xl py-3 font-semibold">ลบกิจกรรมนี้</button>
+          <button id="workoutEditResetBtn" onclick="resetWorkoutOverride()" class="hidden flex-1 bg-surface-container-high text-on-surface-variant rounded-xl py-3 font-semibold">รีเซ็ตค่าเดิม</button>
+          <button onclick="saveWorkoutEdit()" class="flex-1 bg-primary-container text-on-primary rounded-xl py-3 font-semibold">บันทึก</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <div id="workoutModal" class="fixed inset-0 z-[55] hidden flex items-end md:items-center justify-center">
     <div id="workoutModalOverlay" class="absolute inset-0 bg-primary-container/30 backdrop-blur-md transition-opacity duration-300 opacity-0" onclick="closeWorkoutModal()"></div>
@@ -805,9 +893,20 @@ const state = {
   profile:null,
   settings:{ openRouterKey:'', appsScriptUrl:DEFAULT_APPS_SCRIPT_URL, visionModel:'google/gemini-2.5-flash-lite', syncEnabled:true, lastSyncedAt:null },
   logs:{}, isDemo:false, scanResult:null, manualCategory:'all', historyRange:7,
-  weekChart:null, historyChart:null, selectedWorkout:null
+  weekChart:null, historyChart:null, selectedWorkout:null,
+  // Feature: custom + override workouts (per-user, persisted)
+  customWorkouts:[],           // array of { id, name_th, met, icon, isCustom:true }
+  workoutOverrides:{},         // { workoutId: customMET } — overrides built-in defaults
+  // Feature: backdated logging — which date are we saving to (session-level, defaults today)
+  logDate:null,                // YYYY-MM-DD — set in boot
+  editingWorkout:null          // workout being edited in edit modal
 };
-const KEY = { profile:APP.storagePrefix+'profile', settings:APP.storagePrefix+'settings', logs:APP.storagePrefix+'logs' };
+const KEY = {
+  profile:  APP.storagePrefix + 'profile',
+  settings: APP.storagePrefix + 'settings',
+  logs:     APP.storagePrefix + 'logs',
+  workouts: APP.storagePrefix + 'workouts'
+};
 
 function persist() {
   if (state.isDemo) return;
@@ -815,6 +914,7 @@ function persist() {
     if (state.profile) localStorage.setItem(KEY.profile, JSON.stringify(state.profile));
     localStorage.setItem(KEY.settings, JSON.stringify(state.settings));
     localStorage.setItem(KEY.logs, JSON.stringify(state.logs));
+    localStorage.setItem(KEY.workouts, JSON.stringify({ custom:state.customWorkouts, overrides:state.workoutOverrides }));
   } catch (e) { console.error('persist failed', e); }
 }
 function loadFromStorage() {
@@ -822,7 +922,25 @@ function loadFromStorage() {
     const p = localStorage.getItem(KEY.profile); if (p) state.profile = JSON.parse(p);
     const s = localStorage.getItem(KEY.settings); if (s) Object.assign(state.settings, JSON.parse(s));
     const l = localStorage.getItem(KEY.logs); if (l) state.logs = JSON.parse(l);
+    const w = localStorage.getItem(KEY.workouts);
+    if (w) {
+      const parsed = JSON.parse(w);
+      state.customWorkouts = Array.isArray(parsed.custom) ? parsed.custom : [];
+      state.workoutOverrides = (parsed.overrides && typeof parsed.overrides === 'object') ? parsed.overrides : {};
+    }
   } catch (e) { console.error('load failed', e); }
+}
+
+// Returns all workouts (built-in with overrides applied + custom)
+function getAllWorkouts() {
+  const merged = WORKOUTS.map(w => {
+    const override = state.workoutOverrides[w.id];
+    return override != null ? Object.assign({}, w, { met:override, isOverridden:true }) : Object.assign({}, w);
+  });
+  return merged.concat(state.customWorkouts || []);
+}
+function findWorkout(id) {
+  return getAllWorkouts().find(x => x.id === id);
 }
 function uuid() { return 'x-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2,9); }
 function todayStr() {
@@ -860,7 +978,7 @@ function calcMacroTargets(targetKcal) {
   };
 }
 function calcKcalBurned(workoutId, durationMin) {
-  const w = WORKOUTS.find(x => x.id === workoutId);
+  const w = findWorkout(workoutId);
   const weight = state.profile && state.profile.weightKg ? state.profile.weightKg : 60;
   const hours = durationMin / 60;
   return Math.round((w && w.met ? w.met : 4.0) * weight * hours);
@@ -1031,13 +1149,17 @@ function renderRoute() {
   document.getElementById('topBar').classList.toggle('hidden', onScan);
   document.getElementById('bottomNav').classList.toggle('hidden', onScan);
   document.getElementById('fab').classList.toggle('hidden', onScan);
+  // Keep logDate across log screens; reset to today when leaving them entirely
+  if (route !== 'manual' && route !== 'workout' && route !== 'scan') {
+    state.logDate = todayStr();
+  }
   if (route === 'dashboard') renderDashboard();
-  else if (route === 'manual') renderManual();
-  else if (route === 'workout') renderWorkoutGrid();
+  else if (route === 'manual') { setLogDate(state.logDate || todayStr()); renderManual(); }
+  else if (route === 'workout') { setLogDate(state.logDate || todayStr()); renderWorkoutGrid(); }
   else if (route === 'history') renderHistory();
   else if (route === 'profile') renderProfileForm();
   else if (route === 'settings') updateSettingsUI();
-  else if (route === 'scan') resetScanView();
+  else if (route === 'scan') { setLogDate(state.logDate || todayStr()); resetScanView(); }
   window.scrollTo(0, 0);
 }
 window.addEventListener('hashchange', renderRoute);
@@ -1124,7 +1246,7 @@ function renderWorkoutListToday() {
   if (day.workouts.length === 0) { setHtml(wrap, ''); empty.classList.remove('hidden'); return; }
   empty.classList.add('hidden');
   const html = day.workouts.map(w => {
-    const cat = WORKOUTS.find(x => x.id === w.type) || { icon:'fitness_center', name_th:w.type };
+    const cat = findWorkout(w.type) || { icon:'fitness_center', name_th:(w.name_th || w.type) };
     return '<div class="glass-card rounded-xl p-3.5 flex items-center justify-between">'
       + '<div class="flex items-center gap-3 min-w-0 flex-1">'
       + '<span class="material-symbols-outlined text-secondary-container bg-secondary-container/10 p-2 rounded-full icon-fill">' + cat.icon + '</span>'
@@ -1268,7 +1390,8 @@ function guessMealTypeByTime() {
 function saveMeal(meal) {
   meal.time = meal.time || new Date().toTimeString().slice(0,5);
   meal.createdAt = new Date().toISOString();
-  getDayLog(todayStr()).meals.push(meal);
+  const targetDate = state.logDate || todayStr();
+  getDayLog(targetDate).meals.push(meal);
   persist(); queueSync();
 }
 
@@ -1354,18 +1477,31 @@ function scanSaveResult() {
 /* ===== Workout ===== */
 function renderWorkoutGrid() {
   const grid = document.getElementById('workoutGrid');
-  const html = WORKOUTS.map(w => {
-    return '<button onclick="openWorkoutModal(\'' + escapeHtml(w.id) + '\')" class="workout-tile glass-card rounded-2xl p-card-padding flex flex-col items-center justify-center gap-3 hover:scale-[0.98] transition-transform aspect-square group">'
+  const all = getAllWorkouts();
+  const tiles = all.map(w => {
+    const customBadge = w.isCustom
+      ? '<span class="absolute top-1 left-1 text-[9px] font-bold bg-tertiary-fixed-dim/80 text-on-tertiary-container px-1.5 py-0.5 rounded-full">CUSTOM</span>'
+      : (w.isOverridden ? '<span class="absolute top-1 left-1 text-[9px] font-bold bg-primary-fixed/80 text-primary-container px-1.5 py-0.5 rounded-full">' + (+w.met).toFixed(1) + ' MET</span>' : '');
+    return '<div class="workout-tile glass-card rounded-2xl p-card-padding flex flex-col items-center justify-center gap-3 aspect-square group relative">'
+      + customBadge
+      + '<button onclick="openWorkoutEditModal(\'' + escapeHtml(w.id) + '\')" class="absolute top-1.5 right-1.5 w-7 h-7 flex items-center justify-center rounded-full bg-white/60 hover:bg-white text-outline hover:text-primary-container transition-colors" title="แก้ไข/ตั้งค่า">'
+      + '<span class="material-symbols-outlined text-[16px]">edit</span></button>'
+      + '<button onclick="openWorkoutModal(\'' + escapeHtml(w.id) + '\')" class="w-full h-full flex flex-col items-center justify-center gap-3 hover:scale-[0.98] transition-transform">'
       + '<div class="w-14 h-14 rounded-full bg-primary/5 group-hover:bg-primary/10 flex items-center justify-center transition-colors">'
-      + '<span class="material-symbols-outlined text-[32px] text-primary-container">' + escapeHtml(w.icon) + '</span>'
-      + '</div>'
-      + '<span class="text-label-md text-primary-container font-semibold">' + escapeHtml(w.name_th) + '</span>'
-      + '</button>';
+      + '<span class="material-symbols-outlined text-[32px] text-primary-container">' + escapeHtml(w.icon) + '</span></div>'
+      + '<span class="text-label-md text-primary-container font-semibold text-center">' + escapeHtml(w.name_th) + '</span>'
+      + '</button></div>';
   }).join('');
-  setHtml(grid, html);
+  // "Create new" tile
+  const createTile = '<button onclick="openWorkoutEditModal(null)" class="workout-tile rounded-2xl p-card-padding flex flex-col items-center justify-center gap-3 aspect-square border-2 border-dashed border-primary-container/30 text-primary-container hover:bg-primary/5 transition-colors">'
+    + '<div class="w-14 h-14 rounded-full bg-primary-container/10 flex items-center justify-center">'
+    + '<span class="material-symbols-outlined text-[32px] text-primary-container">add</span></div>'
+    + '<span class="text-label-md font-semibold">สร้างกิจกรรมใหม่</span>'
+    + '</button>';
+  setHtml(grid, tiles + createTile);
 }
 function openWorkoutModal(workoutId) {
-  const w = WORKOUTS.find(x => x.id === workoutId);
+  const w = findWorkout(workoutId);
   if (!w) return;
   state.selectedWorkout = w;
   document.getElementById('workoutModalTitle').textContent = w.name_th;
@@ -1383,6 +1519,178 @@ function openWorkoutModal(workoutId) {
   if (window.innerWidth < 768) { content.classList.remove('translate-y-full'); content.classList.add('translate-y-0'); }
   else { content.classList.remove('md:translate-y-4','md:scale-95','translate-y-full'); content.classList.add('md:translate-y-0','md:scale-100'); }
 }
+/* ===== Backdated logging helpers ===== */
+function setLogDate(dateStr) {
+  if (!dateStr) dateStr = todayStr();
+  state.logDate = dateStr;
+  // sync all date inputs/labels
+  const isToday = (dateStr === todayStr());
+  const label = isToday ? 'วันนี้' : thaiDate(dateStr);
+  ['manualLogDateLabel','workoutLogDateLabel','scanResultDateLabel'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.textContent = label;
+  });
+  ['manualLogDate','workoutLogDate','scanResultDate'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = dateStr;
+  });
+  ['manualResetDateBtn','workoutResetDateBtn'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.classList.toggle('hidden', isToday);
+  });
+}
+function openDatePicker(inputId) {
+  const el = document.getElementById(inputId);
+  if (!el) return;
+  el.value = state.logDate;
+  // showPicker is supported on iOS Safari 16.4+ and modern Chrome
+  if (typeof el.showPicker === 'function') {
+    try { el.showPicker(); return; } catch (e) {}
+  }
+  el.classList.remove('hidden');
+  el.focus();
+  setTimeout(() => el.classList.add('hidden'), 100);
+}
+
+/* ===== Workout Edit/Create Modal ===== */
+const WORKOUT_ICON_CHOICES = [
+  'directions_walk','directions_run','self_improvement','fitness_center','timer','pool','directions_bike',
+  'sports_martial_arts','music_note','accessibility_new','hiking','sports_tennis','sports_basketball',
+  'sports_football','sports_soccer','sports_volleyball','sports_golf','sports_baseball','sports_cricket',
+  'sports_rugby','sports_handball','sports_hockey','sports_kabaddi','sports_mma','sports_esports',
+  'rowing','kayaking','surfing','snowboarding','skateboarding','ice_skating','sledding',
+  'paragliding','scuba_diving','kitesurfing','sailing','golf_course','skiing',
+  'cardiology','exercise','sprint','sports','sports_score','outdoor_grill','park','forest'
+];
+
+function openWorkoutEditModal(workoutId) {
+  const isCreate = !workoutId;
+  let w = null;
+  if (!isCreate) w = findWorkout(workoutId);
+  state.editingWorkout = isCreate ? { isCreate:true } : { isCreate:false, id:workoutId, isCustom: !!(w && w.isCustom) };
+  document.getElementById('workoutEditTitle').textContent = isCreate ? 'สร้างกิจกรรมใหม่' : (w && w.isCustom ? 'แก้ไขกิจกรรม' : 'ตั้งค่ากิจกรรมพื้นฐาน');
+  document.getElementById('workoutEditSubtitle').textContent = isCreate ? 'ตั้งชื่อ + กำหนด MET' : ((w && w.isCustom) ? 'แก้ชื่อ MET ไอคอน หรือลบ' : 'แก้ค่า MET ได้เท่านั้น');
+
+  const nameInput = document.getElementById('workoutEditName');
+  const metInput = document.getElementById('workoutEditMet');
+  const nameWrap = document.getElementById('workoutEditNameWrap');
+  const iconWrap = document.getElementById('workoutEditIconWrap');
+  const overrideHint = document.getElementById('workoutEditOverrideHint');
+  const deleteBtn = document.getElementById('workoutEditDeleteBtn');
+  const resetBtn = document.getElementById('workoutEditResetBtn');
+
+  if (isCreate) {
+    nameInput.value = '';
+    metInput.value = 6.0;
+    state.editingWorkout.icon = 'fitness_center';
+    nameWrap.classList.remove('hidden');
+    iconWrap.classList.remove('hidden');
+    overrideHint.classList.add('hidden');
+    deleteBtn.classList.add('hidden');
+    resetBtn.classList.add('hidden');
+  } else if (w && w.isCustom) {
+    nameInput.value = w.name_th;
+    metInput.value = w.met;
+    state.editingWorkout.icon = w.icon;
+    nameWrap.classList.remove('hidden');
+    iconWrap.classList.remove('hidden');
+    overrideHint.classList.add('hidden');
+    deleteBtn.classList.remove('hidden');
+    resetBtn.classList.add('hidden');
+  } else if (w) {
+    // built-in — only allow MET override
+    nameInput.value = w.name_th;
+    metInput.value = w.met;
+    state.editingWorkout.icon = w.icon;
+    nameWrap.classList.add('hidden');
+    iconWrap.classList.add('hidden');
+    overrideHint.classList.remove('hidden');
+    deleteBtn.classList.add('hidden');
+    resetBtn.classList.toggle('hidden', !w.isOverridden);
+  }
+
+  renderIconGrid();
+  updateEditPreview();
+  document.getElementById('workoutEditModal').classList.remove('hidden');
+}
+
+function closeWorkoutEditModal() {
+  document.getElementById('workoutEditModal').classList.add('hidden');
+  state.editingWorkout = null;
+}
+
+function renderIconGrid() {
+  const wrap = document.getElementById('workoutEditIconGrid');
+  const sel = (state.editingWorkout && state.editingWorkout.icon) || 'fitness_center';
+  const html = WORKOUT_ICON_CHOICES.map(ic => {
+    const active = ic === sel;
+    return '<button type="button" onclick="pickIcon(\'' + escapeHtml(ic) + '\')" class="iconPickBtn h-12 rounded-lg flex items-center justify-center transition-all '
+      + (active ? 'bg-primary-container text-on-primary' : 'bg-surface-container-low hover:bg-surface-container text-primary-container')
+      + '"><span class="material-symbols-outlined text-[22px]">' + ic + '</span></button>';
+  }).join('');
+  setHtml(wrap, html);
+}
+
+function pickIcon(icon) {
+  if (!state.editingWorkout) return;
+  state.editingWorkout.icon = icon;
+  renderIconGrid();
+  updateEditPreview();
+}
+
+function updateEditPreview() {
+  if (!state.editingWorkout) return;
+  document.getElementById('workoutEditPreviewIcon').textContent = state.editingWorkout.icon || 'fitness_center';
+  const met = +document.getElementById('workoutEditMet').value || 0;
+  const weight = state.profile && state.profile.weightKg ? state.profile.weightKg : 60;
+  const kcal30 = Math.round(met * weight * 0.5);
+  document.getElementById('workoutEditKcalPreview').textContent = '≈ ' + kcal30 + ' kcal/30 นาที';
+}
+
+function saveWorkoutEdit() {
+  if (!state.editingWorkout) return;
+  const ed = state.editingWorkout;
+  const met = +document.getElementById('workoutEditMet').value;
+  if (!met || met < 0.5 || met > 25) { toast('MET ต้องอยู่ระหว่าง 0.5-25','warn'); return; }
+
+  if (ed.isCreate) {
+    const name = document.getElementById('workoutEditName').value.trim();
+    if (!name) { toast('กรอกชื่อกิจกรรม','warn'); return; }
+    const newId = 'custom-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2,6);
+    state.customWorkouts.push({ id:newId, name_th:name, met, icon:(ed.icon || 'fitness_center'), isCustom:true });
+    toast('เพิ่ม "' + name + '" แล้ว','success');
+  } else if (ed.isCustom) {
+    const name = document.getElementById('workoutEditName').value.trim();
+    if (!name) { toast('กรอกชื่อกิจกรรม','warn'); return; }
+    const idx = state.customWorkouts.findIndex(x => x.id === ed.id);
+    if (idx >= 0) state.customWorkouts[idx] = Object.assign({}, state.customWorkouts[idx], { name_th:name, met, icon:(ed.icon || 'fitness_center') });
+    toast('บันทึกการแก้ไขแล้ว','success');
+  } else {
+    // built-in override
+    state.workoutOverrides[ed.id] = met;
+    toast('ตั้งค่า MET ใหม่แล้ว','success');
+  }
+  persist(); queueSync();
+  closeWorkoutEditModal();
+  renderWorkoutGrid();
+}
+
+function deleteCustomWorkoutFromEdit() {
+  if (!state.editingWorkout || !state.editingWorkout.id) return;
+  if (!confirm('ลบกิจกรรมนี้? (รายการ workout เก่าที่ใช้กิจกรรมนี้จะยังอยู่)')) return;
+  state.customWorkouts = state.customWorkouts.filter(x => x.id !== state.editingWorkout.id);
+  persist(); queueSync();
+  closeWorkoutEditModal();
+  renderWorkoutGrid();
+  toast('ลบแล้ว','info');
+}
+
+function resetWorkoutOverride() {
+  if (!state.editingWorkout || !state.editingWorkout.id) return;
+  delete state.workoutOverrides[state.editingWorkout.id];
+  persist(); queueSync();
+  closeWorkoutEditModal();
+  renderWorkoutGrid();
+  toast('รีเซ็ตค่า MET เดิมแล้ว','info');
+}
+
 function closeWorkoutModal() {
   const modal = document.getElementById('workoutModal');
   const overlay = document.getElementById('workoutModalOverlay');
@@ -1397,7 +1705,8 @@ function saveWorkout() {
   const w = state.selectedWorkout;
   const dur = +document.getElementById('workoutDurationSlider').value;
   const kcal = calcKcalBurned(w.id, dur);
-  getDayLog(todayStr()).workouts.push({
+  const targetDate = state.logDate || todayStr();
+  getDayLog(targetDate).workouts.push({
     id: uuid(), type: w.id, name_th: w.name_th,
     durationMin: dur, kcalBurned: kcal, met: w.met,
     notes: document.getElementById('workoutNotes').value,
@@ -1406,7 +1715,8 @@ function saveWorkout() {
   });
   persist(); queueSync();
   closeWorkoutModal();
-  toast(w.name_th + ' ' + dur + ' นาที −' + kcal + ' kcal','success');
+  const isToday = (targetDate === todayStr());
+  toast(w.name_th + ' ' + dur + ' นาที −' + kcal + ' kcal' + (isToday ? '' : ' (' + thaiDate(targetDate) + ')'),'success');
   setTimeout(() => navigate('#/dashboard'), 200);
 }
 
@@ -1446,12 +1756,15 @@ function renderHistoryChart(dateKeys) {
 }
 function renderHistoryList(dateKeys) {
   const wrap = document.getElementById('historyDailyList');
-  if (dateKeys.length === 0) {
+  // Always include today even if no entries yet
+  const today = todayStr();
+  const expanded = dateKeys.indexOf(today) >= 0 ? dateKeys : [today].concat(dateKeys);
+  if (expanded.length === 0) {
     setHtml(wrap, '<div class="glass-card rounded-2xl p-8 text-center text-outline">ยังไม่มีข้อมูล — เริ่มบันทึกมื้อแรกเลย</div>');
     return;
   }
-  const html = dateKeys.map(d => {
-    const day = state.logs[d];
+  const html = expanded.map(d => {
+    const day = state.logs[d] || { meals:[], workouts:[] };
     const t = calcDayTotals(d);
     const netColor = t.net < 0 ? 'text-secondary-container' : 'text-primary-container';
     const sign = t.net > 0 ? '+' : '';
@@ -1465,7 +1778,7 @@ function renderHistoryList(dateKeys) {
         + '<span class="text-label-md text-primary-container shrink-0">' + (+m.kcal || 0) + ' kcal</span></div>';
     }).join('');
     const workoutsHtml = day.workouts.map(w => {
-      const cat = WORKOUTS.find(x => x.id === w.type) || { icon:'fitness_center', name_th:w.type };
+      const cat = findWorkout(w.type) || { icon:'fitness_center', name_th:(w.name_th || w.type) };
       return '<div class="flex justify-between items-center py-2 bg-surface-container-low/50 px-3 rounded-lg">'
         + '<div class="flex items-center gap-3 min-w-0 flex-1">'
         + '<span class="material-symbols-outlined text-secondary icon-fill">' + cat.icon + '</span>'
@@ -1474,16 +1787,27 @@ function renderHistoryList(dateKeys) {
         + '<span class="text-label-md text-secondary-container shrink-0">−' + (+w.kcalBurned || 0) + ' kcal</span></div>';
     }).join('');
     const emptyItems = (day.meals.length + day.workouts.length === 0) ? '<p class="text-center text-outline text-label-md py-4">ไม่มีรายการ</p>' : '';
-    return '<details class="glass-card rounded-2xl p-card-padding">'
+    const isToday = (d === today);
+    const addBtnRow = '<div class="pt-3 mt-3 border-t border-surface-variant/50 flex justify-end">'
+      + '<button onclick="addForDate(\'' + escapeHtml(d) + '\'); event.preventDefault();" class="inline-flex items-center gap-1.5 text-label-md font-semibold text-primary-container bg-primary-fixed/40 hover:bg-primary-fixed/60 px-3 py-1.5 rounded-full transition-colors">'
+      + '<span class="material-symbols-outlined text-[16px]">add</span> เพิ่มรายการ' + (isToday ? '' : ' ย้อนหลัง') + '</button></div>';
+    return '<details class="glass-card rounded-2xl p-card-padding"' + (isToday ? ' open' : '') + '>'
       + '<summary class="flex justify-between items-center">'
-      + '<div><h3 class="text-headline-sm font-headline-sm text-primary-container">' + thaiDate(d) + '</h3>'
+      + '<div><h3 class="text-headline-sm font-headline-sm text-primary-container">' + thaiDate(d) + (isToday ? ' <span class="text-label-sm text-secondary-container font-semibold">(วันนี้)</span>' : '') + '</h3>'
       + '<p class="text-body-md text-outline">สุทธิ: <span class="' + netColor + ' font-semibold">' + sign + t.net + '</span> kcal</p></div>'
       + '<div class="flex items-center gap-2">'
       + '<div class="text-right hidden sm:block"><div class="text-label-sm text-outline">เข้า ' + t.kcalIn + ' · ออก ' + t.kcalOut + '</div></div>'
       + '<span class="material-symbols-outlined text-outline-variant transition-transform">expand_more</span></div></summary>'
-      + '<div class="pt-4 mt-4 border-t border-surface-variant/50 space-y-2">' + mealsHtml + workoutsHtml + emptyItems + '</div></details>';
+      + '<div class="pt-4 mt-4 border-t border-surface-variant/50 space-y-2">' + mealsHtml + workoutsHtml + emptyItems + '</div>'
+      + addBtnRow + '</details>';
   }).join('');
   setHtml(wrap, html);
+}
+
+// Set log date + open FAB sheet (called from history "+ เพิ่ม" button)
+function addForDate(dateStr) {
+  state.logDate = dateStr;
+  openFabSheet();
 }
 
 /* ===== Profile ===== */
@@ -1584,7 +1908,9 @@ function exportData() {
     exportedAt: new Date().toISOString(),
     profile: state.profile,
     settings: Object.assign({}, state.settings, { openRouterKey:'[redacted]' }),
-    logs: state.logs
+    logs: state.logs,
+    customWorkouts: state.customWorkouts,
+    workoutOverrides: state.workoutOverrides
   };
   const blob = new Blob([JSON.stringify(data, null, 2)], { type:'application/json' });
   const a = document.createElement('a');
@@ -1596,8 +1922,9 @@ function exportData() {
 }
 function clearAllData() {
   if (!confirm('แน่ใจไหมว่าจะลบข้อมูลทั้งหมด? ย้อนกลับไม่ได้')) return;
-  localStorage.removeItem(KEY.profile); localStorage.removeItem(KEY.settings); localStorage.removeItem(KEY.logs);
+  localStorage.removeItem(KEY.profile); localStorage.removeItem(KEY.settings); localStorage.removeItem(KEY.logs); localStorage.removeItem(KEY.workouts);
   state.profile = null; state.logs = {};
+  state.customWorkouts = []; state.workoutOverrides = {};
   state.settings = { openRouterKey:'', appsScriptUrl:DEFAULT_APPS_SCRIPT_URL, visionModel:'google/gemini-2.5-flash-lite', syncEnabled:true, lastSyncedAt:null };
   toast('ล้างข้อมูลแล้ว','info');
   setTimeout(() => location.reload(), 800);
@@ -1699,12 +2026,22 @@ function bindGlobalEvents() {
       document.getElementById('workoutDurationValue').textContent = val;
       if (state.selectedWorkout) document.getElementById('workoutKcalPreview').textContent = calcKcalBurned(state.selectedWorkout.id, val);
     }
+    if (e.target && e.target.id === 'workoutEditMet') updateEditPreview();
     if (e.target && e.target.id === 'profileActivity') {
       updateActivityBadge(+e.target.value);
       updateProfileTdeePreview();
     }
     if (e.target && ['profileBirthYear','profileHeight','profileWeight','profileKcalDelta'].indexOf(e.target.id) >= 0) {
       updateProfileTdeePreview();
+    }
+  });
+
+  // MET preset buttons in workout edit modal
+  document.addEventListener('click', e => {
+    const metBtn = e.target.closest('.metPresetBtn');
+    if (metBtn) {
+      document.getElementById('workoutEditMet').value = metBtn.dataset.met;
+      updateEditPreview();
     }
   });
 
@@ -1729,6 +2066,7 @@ function bindGlobalEvents() {
 
 /* ===== Boot ===== */
 function boot() {
+  state.logDate = todayStr();
   state.isDemo = detectDemo();
   if (state.isDemo) enterDemoMode();
   else loadFromStorage();
